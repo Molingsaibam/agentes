@@ -1,0 +1,11 @@
+node_modules/
+frontend/node_modules/
+server/logs/
+server/database/*.json
+.env
+.DS_Store
+dist/
+*.log
+npm-debug.log*
+.env.local
+.vscode/
