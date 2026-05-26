@@ -1,0 +1,275 @@
+services:
+  # Main API Gateway - orchestrates all agents
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: market-agents-api
+    command: node server/server.js
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      SECURITY_AGENT_URL: http://security-agent:3101
+      COLLECTOR_AGENT_URL: http://collector-agent:3102
+      SPAM_AGENT_URL: http://spam-agent:3105
+      FILTER_AGENT_URL: http://filter-agent:3103
+      RISK_AGENT_URL: http://risk-agent:3106
+      SENTIMENT_AGENT_URL: http://sentiment-agent:3104
+      TRANSLATOR_AGENT_URL: http://translator-agent:3107
+      COMMUNITY_AGENT_URL: http://community-agent:3108
+      AGENT_TIMEOUT_MS: 30000
+    env_file:
+      - .env
+    volumes:
+      - ./server/database:/app/server/database:rw
+      - ./server/logs:/app/server/logs:rw
+    depends_on:
+      security-agent:
+        condition: service_healthy
+      collector-agent:
+        condition: service_healthy
+      filter-agent:
+        condition: service_healthy
+      spam-agent:
+        condition: service_healthy
+      risk-agent:
+        condition: service_healthy
+      sentiment-agent:
+        condition: service_healthy
+      translator-agent:
+        condition: service_healthy
+      community-agent:
+        condition: service_healthy
+    networks:
+      - agents-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "com.example.service=api"
+      - "com.example.version=1.0"
+
+  # Security Agent - validates symbols and detects injection attacks
+  security-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: market-agents-security
+    command: node server/agents/runtime.js security
+    environment:
+      AGENT_NAME: security
+      AGENT_PORT: 3101
+      NODE_ENV: production
+    expose:
+      - "3101"
+    networks:
+      - agents-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3101/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    labels:
+      - "com.example.service=agent"
+      - "com.example.agent=security"
+
+  # Collector Agent - gathers coin news from APIs
+  collector-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: market-agents-collector
+    command: node server/agents/runtime.js collector
+    environment:
+      AGENT_NAME: collector
+      AGENT_PORT: 3102
+      NODE_ENV: production
+    env_file:
+      - .env
+    expose:
+      - "3102"
+    networks:
+      - agents-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3102/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    labels:
+      - "com.example.service=agent"
+      - "com.example.agent=collector"
+
+  # Filter Agent - removes blacklisted and keeps whitelisted news
+  filter-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: market-agents-filter
+    command: node server/agents/runtime.js filter
+    environment:
+      AGENT_NAME: filter
+      AGENT_PORT: 3103
+      NODE_ENV: production
+    expose:
+      - "3103"
+    networks:
+      - agents-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3103/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    labels:
+      - "com.example.service=agent"
+      - "com.example.agent=filter"
+
+  # Sentiment Agent - analyzes news sentiment
+  sentiment-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: market-agents-sentiment
+    command: node server/agents/runtime.js sentiment
+    environment:
+      AGENT_NAME: sentiment
+      AGENT_PORT: 3104
+      NODE_ENV: production
+    expose:
+      - "3104"
+    networks:
+      - agents-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3104/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    labels:
+      - "com.example.service=agent"
+      - "com.example.agent=sentiment"
+
+  # Spam Agent - detects spam news
+  spam-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: market-agents-spam
+    command: node server/agents/runtime.js spam
+    environment:
+      AGENT_NAME: spam
+      AGENT_PORT: 3105
+      NODE_ENV: production
+    expose:
+      - "3105"
+    networks:
+      - agents-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3105/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    labels:
+      - "com.example.service=agent"
+      - "com.example.agent=spam"
+
+  # Risk Agent - assesses risk level
+  risk-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: market-agents-risk
+    command: node server/agents/runtime.js risk
+    environment:
+      AGENT_NAME: risk
+      AGENT_PORT: 3106
+      NODE_ENV: production
+    expose:
+      - "3106"
+    networks:
+      - agents-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3106/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    labels:
+      - "com.example.service=agent"
+      - "com.example.agent=risk"
+
+  # Translator Agent - translates news to Portuguese
+  translator-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: market-agents-translator
+    command: node server/agents/runtime.js translator
+    environment:
+      AGENT_NAME: translator
+      AGENT_PORT: 3107
+      NODE_ENV: production
+      TRANSLATION_PROVIDER: mymemory
+      TRANSLATION_TIMEOUT_MS: 8000
+    expose:
+      - "3107"
+    networks:
+      - agents-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3107/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    labels:
+      - "com.example.service=agent"
+      - "com.example.agent=translator"
+
+  # Community Agent - compares news against asset/community context
+  community-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: market-agents-community
+    command: node server/agents/runtime.js community
+    environment:
+      AGENT_NAME: community
+      AGENT_PORT: 3108
+      NODE_ENV: production
+    expose:
+      - "3108"
+    networks:
+      - agents-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3108/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    labels:
+      - "com.example.service=agent"
+      - "com.example.agent=community"
+
+networks:
+  agents-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16

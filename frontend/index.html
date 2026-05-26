@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Market Agents</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Market Agents</h1>
+    <span class="badge">Fase 1</span>
+  </header>
+
+  <main class="shell">
+    <section class="panel" aria-labelledby="analyze-title">
+      <div>
+        <h2 id="analyze-title">Dashboard Multi-Agente</h2>
+        <p>Informe um símbolo de cripto para coletar notícias, filtrar sinais úteis e gerar uma leitura simples de sentimento.</p>
+      </div>
+
+      <div class="form-row">
+        <input id="symbol" placeholder="BTC / ETH / SOL" autocomplete="off">
+        <button id="analyzeBtn" type="button">Analisar</button>
+      </div>
+    </section>
+
+    <div id="status" role="status"></div>
+
+    <section id="summary" class="summary-grid" aria-label="Resumo da análise"></section>
+    <section id="news" class="news-list" aria-label="Notícias filtradas"></section>
+    <details class="raw-block">
+      <summary>Ver JSON completo</summary>
+      <pre id="result"></pre>
+    </details>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

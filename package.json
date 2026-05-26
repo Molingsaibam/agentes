@@ -3,15 +3,26 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "start": "node server/server.js"
+    "start": "node server/server.js",
+    "start:agent": "node server/agents/runtime.js",
+    "start:agent:security": "node server/agents/runtime.js security",
+    "start:agent:collector": "node server/agents/runtime.js collector",
+    "start:agent:spam": "node server/agents/runtime.js spam",
+    "start:agent:filter": "node server/agents/runtime.js filter",
+    "start:agent:risk": "node server/agents/runtime.js risk",
+    "start:agent:sentiment": "node server/agents/runtime.js sentiment",
+    "start:agent:translator": "node server/agents/runtime.js translator",
+    "start:agent:community": "node server/agents/runtime.js community",
+    "test:agents": "node test_agents.js"
   },
   "dependencies": {
     "axios": "^1.7.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "fast-xml-parser": "^5.8.0",
     "helmet": "^7.1.0",
     "morgan": "^1.10.0",
-    "uuid": "^9.0.1"
+    "uuid": "^14.0.0"
   }
 }
