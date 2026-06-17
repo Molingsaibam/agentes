@@ -12,6 +12,10 @@ import { detectSpam } from './spam/index.js'
 import { assessRisk } from './risk/index.js'
 import { translateNews } from './translator/index.js'
 import { analyzeCommunityContext } from './community/index.js'
+import gitAgent from './gitAgent.js'
+import { analyzeIntelligence } from './intelligence/index.js'
+import { analyzeMarketCycle } from './market/index.js'
+import { runBacktests } from './backtest/index.js'
 
 dotenv.config()
 
@@ -24,11 +28,15 @@ const defaultPorts = {
   spam: 3105,
   risk: 3106,
   translator: 3107,
-  community: 3108
+  community: 3108,
+  git: 3109,
+  intelligence: 3110,
+  market: 3111,
+  backtest: 3112
 }
 
 if(!agentName || !defaultPorts[agentName]){
-  console.error('Set AGENT_NAME to one of: security, collector, filter, sentiment, spam, risk, translator, community')
+  console.error('Set AGENT_NAME to one of: security, collector, filter, sentiment, spam, risk, translator, community, git, intelligence, market, backtest')
   process.exit(1)
 }
 
@@ -123,5 +131,48 @@ async function runAgent(name, payload){
     return analyzeCommunityContext(payload.symbol, payload.news)
   }
 
+  if(name === 'git'){
+    return gitAgent.scanRepos({
+      tracked: payload.tracked || payload.repos,
+      symbol: payload.symbol,
+      symbols: payload.symbols,
+      includeForks: payload.includeForks,
+      includeIssues: payload.includeIssues,
+      includeReleases: payload.includeReleases,
+      discover: payload.discover,
+      commitLimit: payload.commitLimit,
+      issueLimit: payload.issueLimit,
+      forkLimit: payload.forkLimit,
+      releaseLimit: payload.releaseLimit
+    })
+  }
+
+  if(name === 'intelligence'){
+    return analyzeIntelligence(payload)
+  }
+
+  if(name === 'market'){
+    return analyzeMarketCycle(payload.symbol, payload)
+  }
+
+  if(name === 'backtest'){
+    return runBacktests(payload.tracked || payload.repos || buildTrackedFromSymbols(payload.symbols || payload.symbol))
+  }
+
   throw new Error(`unknown agent: ${name}`)
+}
+
+function buildTrackedFromSymbols(value){
+  const values = Array.isArray(value) ? value : String(value || '').split(',')
+  const symbols = values
+    .flatMap(item => String(item || '').split(','))
+    .map(item => item.trim().toUpperCase())
+    .filter(Boolean)
+
+  if(symbols.length === 0) return undefined
+
+  return symbols.reduce((acc, symbol) => {
+    acc[symbol] = 'manual'
+    return acc
+  }, {})
 }

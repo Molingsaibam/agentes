@@ -14,6 +14,8 @@ const spamTerms = [
   'whatsapp'
 ]
 
+const spamWords = ['100x','free money','airdrop','giveaway','click here','visit']
+
 export function detectSpam(news=[]){
   const items = Array.isArray(news) ? news : []
 
@@ -23,10 +25,13 @@ export function detectSpam(news=[]){
     const contextPenalty = item?.context?.novelty === 'surprise' && matched_terms.length > 0 ? 15 : 0
     const score = Math.min(100, matched_terms.length * 35 + contextPenalty)
 
+    const title = (item.title || '').toLowerCase()
+    const is_spam = spamWords.some(w => title.includes(w))
+
     return {
       ...item,
       spam:{
-        is_spam: score >= 35,
+        is_spam: score >= 35 || is_spam,
         score,
         context_penalty: contextPenalty,
         matched_terms

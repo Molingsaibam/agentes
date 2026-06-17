@@ -89,6 +89,22 @@ export function analyzeCommunityContext(symbol, news=[]){
   }
 }
 
+export function analyzeCommunityContextSimple(symbol, news = []){
+  // Simples análise de palavra-chave para contar "expected" vs "surprise"
+  const counts = { expected: 0, surprise: 0 }
+  const expectedTerms = [ 'partnership', 'listing', 'etf', 'blackrock' ]
+
+  const outNews = news.map(item => {
+    const title = (item.title || '').toLowerCase()
+    const isExpected = expectedTerms.some(t => title.includes(t))
+    if(isExpected) counts.expected++
+    else counts.surprise++
+    return item
+  })
+
+  return { symbol, counts, news: outNews }
+}
+
 function annotateNews(item, profile){
   const text = normalizeText(`${item?.title || ''} ${item?.body || ''}`)
   const expectedMatches = findMatches(text, profile.expected_topics || [])

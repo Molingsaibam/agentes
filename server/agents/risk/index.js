@@ -19,46 +19,10 @@ const mediumRiskTerms = [
   'warning'
 ]
 
-export function assessRisk(news=[], sentiment={ score: 0 }){
-  const items = Array.isArray(news) ? news : []
-  let high = 0
-  let medium = 0
-  let low = 0
-
-  const annotated = items.map(item => {
-    const text = normalizeText(`${item?.title || ''} ${item?.body || ''}`)
-    const high_terms = highRiskTerms.filter(term => text.includes(term))
-    const medium_terms = mediumRiskTerms.filter(term => text.includes(term))
-    const contextAdjustment = scoreContext(item?.context)
-    const score = Math.max(0, high_terms.length * 3 + medium_terms.length + contextAdjustment)
-    const level = score >= 3 ? 'high' : score >= 1 ? 'medium' : 'low'
-
-    if(level === 'high') high++
-    if(level === 'medium') medium++
-    if(level === 'low') low++
-
-    return {
-      ...item,
-      risk:{
-        level,
-        score,
-        context_adjustment: contextAdjustment,
-        high_terms,
-        medium_terms
-      }
-    }
-  })
-
-  const sentimentPenalty = Number(sentiment?.score || 0) < 0 ? 1 : 0
-  const globalScore = high * 3 + medium + sentimentPenalty
-  const globalLevel = globalScore >= 6 ? 'high' : globalScore >= 2 ? 'medium' : 'low'
-
-  return {
-    level: globalLevel,
-    score: globalScore,
-    counts:{ high, medium, low },
-    news: annotated
-  }
+export function assessRisk(news = [], sentiment = { score: 0 }){
+  const suspicious = news.filter(item => item?.spam?.is_spam).length
+  const level = (sentiment.score < -1 || suspicious > 3) ? 'high' : (sentiment.score < 0 ? 'medium' : 'low')
+  return { level, news, reason: `sentiment=${sentiment.score}, suspicious=${suspicious}` }
 }
 
 function normalizeText(value){

@@ -19,6 +19,10 @@ services:
       SENTIMENT_AGENT_URL: http://sentiment-agent:3104
       TRANSLATOR_AGENT_URL: http://translator-agent:3107
       COMMUNITY_AGENT_URL: http://community-agent:3108
+      GIT_AGENT_URL: http://git-agent:3109
+      INTELLIGENCE_AGENT_URL: http://intelligence-agent:3110
+      MARKET_AGENT_URL: http://market-agent:3111
+      BACKTEST_AGENT_URL: http://backtest-agent:3112
       AGENT_TIMEOUT_MS: 30000
     env_file:
       - .env
@@ -41,6 +45,14 @@ services:
       translator-agent:
         condition: service_healthy
       community-agent:
+        condition: service_healthy
+      git-agent:
+        condition: service_healthy
+      intelligence-agent:
+        condition: service_healthy
+      market-agent:
+        condition: service_healthy
+      backtest-agent:
         condition: service_healthy
     networks:
       - agents-network
@@ -266,6 +278,115 @@ services:
     labels:
       - "com.example.service=agent"
       - "com.example.agent=community"
+
+  # Git Agent - scans repositories, forks, issues, releases and commits
+  git-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: market-agents-git
+    command: node server/agents/runtime.js git
+    environment:
+      AGENT_NAME: git
+      AGENT_PORT: 3109
+      NODE_ENV: production
+    env_file:
+      - .env
+    expose:
+      - "3109"
+    networks:
+      - agents-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3109/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    labels:
+      - "com.example.service=agent"
+      - "com.example.agent=git"
+
+  # Intelligence Agent - explains segments, consensus and actionability
+  intelligence-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: market-agents-intelligence
+    command: node server/agents/runtime.js intelligence
+    environment:
+      AGENT_NAME: intelligence
+      AGENT_PORT: 3110
+      NODE_ENV: production
+    expose:
+      - "3110"
+    networks:
+      - agents-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3110/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    labels:
+      - "com.example.service=agent"
+      - "com.example.agent=intelligence"
+
+  # Market Agent - reads market cycle, alt rotation and basic asset health
+  market-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: market-agents-market
+    command: node server/agents/runtime.js market
+    environment:
+      AGENT_NAME: market
+      AGENT_PORT: 3111
+      NODE_ENV: production
+      MARKET_TIMEOUT_MS: 12000
+    expose:
+      - "3111"
+    networks:
+      - agents-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3111/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    labels:
+      - "com.example.service=agent"
+      - "com.example.agent=market"
+
+  # Backtest Agent - runs a simple historical signal simulation from collected news
+  backtest-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: market-agents-backtest
+    command: node server/agents/runtime.js backtest
+    environment:
+      AGENT_NAME: backtest
+      AGENT_PORT: 3112
+      NODE_ENV: production
+    env_file:
+      - .env
+    expose:
+      - "3112"
+    networks:
+      - agents-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3112/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    labels:
+      - "com.example.service=agent"
+      - "com.example.agent=backtest"
 
 networks:
   agents-network:

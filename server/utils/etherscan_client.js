@@ -1,0 +1,191 @@
+const fs = require('fs');
+const path = require('path');
+const axios = require('axios');
+
+const METRICS_PATH = path.resolve(__dirname, '..', 'logs', 'etherscan_metrics.json');
+// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
+// const DEFAULT_ENDPOINT = 'https://api.etherscan.io/api';
+// Suggested replacement (example):
+// const etherscanClient = require('../server/utils/etherscan_client');
+// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
+// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
+// [ETHERSCAN-AUTOREPLACE-END]
+
+function _ensureMetrics() {
+  try {
+    if (!fs.existsSync(METRICS_PATH)) {
+      const base = { etherscan: { status: 'unknown', requests: 0, cache_hits: 0, cache_misses: 0, errors: 0 } };
+      fs.writeFileSync(METRICS_PATH, JSON.stringify(base, null, 2));
+      return base;
+    }
+    const content = fs.readFileSync(METRICS_PATH, 'utf8');
+    return JSON.parse(content || '{}');
+  } catch (err) {
+    console.error('[Etherscan][Metrics] erro ao ler/criar metrics file', err.message);
+    return { etherscan: { status: 'unknown', requests: 0, cache_hits: 0, cache_misses: 0, errors: 0 } };
+  }
+}
+
+function _saveMetrics(metrics) {
+  try {
+    fs.writeFileSync(METRICS_PATH, JSON.stringify(metrics, null, 2));
+  } catch (err) {
+    console.error('[Etherscan][Metrics] erro ao salvar metrics file', err.message);
+  }
+}
+
+async function getContractABI(address, apiKey, options = {}) {
+  const endpoint = options.endpoint || DEFAULT_ENDPOINT;
+  if (!apiKey) {
+    console.error('[Etherscan] API key não fornecida para getContractABI');
+    throw new Error('ETHERSCAN_API_KEY is required');
+  }
+
+  // Metrics increment
+  const metrics = _ensureMetrics();
+  metrics.etherscan.requests = (metrics.etherscan.requests || 0) + 1;
+  metrics.etherscan.status = 'ok';
+  _saveMetrics(metrics);
+
+  const params = {
+    module: 'contract',
+// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
+//     action: 'getabi',
+// Suggested replacement (example):
+// const etherscanClient = require('../server/utils/etherscan_client');
+// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
+// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
+// [ETHERSCAN-AUTOREPLACE-END]
+    address: address,
+    apikey: apiKey
+  };
+
+// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
+//   console.log('[Etherscan] Request', { address, endpoint, module: 'contract', action: 'getabi' });
+// Suggested replacement (example):
+// const etherscanClient = require('../server/utils/etherscan_client');
+// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
+// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
+// [ETHERSCAN-AUTOREPLACE-END]
+  console.log('[Etherscan] Params', params);
+
+  try {
+    const resp = await axios.get(endpoint, { params, timeout: 30000 });
+    console.log('[Etherscan] Response', resp.data);
+
+    const data = resp.data;
+    if (!data) {
+      metrics.etherscan.errors = (metrics.etherscan.errors || 0) + 1;
+      _saveMetrics(metrics);
+      throw new Error('Etherscan empty response');
+    }
+
+    if (data.status && String(data.status) !== '1') {
+      // API returned non-success -> log detailed info
+      metrics.etherscan.errors = (metrics.etherscan.errors || 0) + 1;
+      _saveMetrics(metrics);
+      console.error('[Etherscan] API Error', { address, message: data.message, result: data.result });
+      throw new Error(`Etherscan API error: ${data.message || 'unknown'} - ${data.result}`);
+    }
+
+    // data.status == '1' -> result should be ABI string
+    if (data.result && typeof data.result === 'string') {
+      try {
+        const abi = JSON.parse(data.result);
+        // Could implement cache hits/misses here if desired
+        return abi;
+      } catch (err) {
+        metrics.etherscan.errors = (metrics.etherscan.errors || 0) + 1;
+        _saveMetrics(metrics);
+        console.error('[Etherscan] ABI parse error', err.message);
+        throw new Error('ABI parse error: ' + err.message);
+      }
+    }
+
+    // Unexpected shape
+    metrics.etherscan.errors = (metrics.etherscan.errors || 0) + 1;
+    _saveMetrics(metrics);
+    throw new Error('Unexpected Etherscan response shape');
+  } catch (err) {
+    metrics.etherscan.status = 'error';
+    metrics.etherscan.errors = (metrics.etherscan.errors || 0) + 1;
+    _saveMetrics(metrics);
+    console.error('[Etherscan] Request failed', err.message);
+    throw err;
+  }
+}
+
+// New: get token holders via Etherscan (centralized)
+async function getTokenHolders(address, apiKey, options = {}) {
+  const endpoint = options.endpoint || DEFAULT_ENDPOINT;
+  if (!apiKey) {
+    console.error('[Etherscan] API key não fornecida para getTokenHolders');
+    throw new Error('ETHERSCAN_API_KEY is required');
+  }
+
+  const metrics = _ensureMetrics();
+  metrics.etherscan.requests = (metrics.etherscan.requests || 0) + 1;
+  metrics.etherscan.status = 'ok';
+  _saveMetrics(metrics);
+
+  const params = {
+    module: 'token',
+// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
+//     action: 'tokenholderlist',
+// Suggested replacement (example):
+// const etherscanClient = require('../server/utils/etherscan_client');
+// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
+// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
+// [ETHERSCAN-AUTOREPLACE-END]
+    contractaddress: address,
+    apikey: apiKey
+  };
+
+  console.log('[Etherscan] Request token holders', { address, endpoint, params });
+
+  try {
+    const resp = await axios.get(endpoint, { params, timeout: 30000 });
+    console.log('[Etherscan] Response token holders', resp.data);
+    const data = resp.data;
+
+    if (!data) {
+      metrics.etherscan.errors = (metrics.etherscan.errors || 0) + 1;
+      _saveMetrics(metrics);
+      throw new Error('Etherscan empty response');
+    }
+
+    if (data.status && String(data.status) !== '1') {
+      metrics.etherscan.errors = (metrics.etherscan.errors || 0) + 1;
+      _saveMetrics(metrics);
+      console.error('[Etherscan] Token holders API Error', { address, message: data.message, result: data.result });
+      throw new Error(`Etherscan token holders error: ${data.message || 'unknown'} - ${data.result}`);
+    }
+
+    // Expect data.result to be an array
+    if (data.result && Array.isArray(data.result)) {
+      return data.result;
+    }
+
+    metrics.etherscan.errors = (metrics.etherscan.errors || 0) + 1;
+    _saveMetrics(metrics);
+    throw new Error('Unexpected Etherscan token holders response shape');
+  } catch (err) {
+    metrics.etherscan.status = 'error';
+    metrics.etherscan.errors = (metrics.etherscan.errors || 0) + 1;
+    _saveMetrics(metrics);
+    console.error('[Etherscan] getTokenHolders failed', err.message);
+    throw err;
+  }
+}
+
+function getMetrics() {
+  const metrics = _ensureMetrics();
+  return metrics.etherscan || { status: 'unknown', requests: 0, cache_hits: 0, cache_misses: 0, errors: 0 };
+}
+
+module.exports = {
+  getContractABI,
+  getTokenHolders,
+  getMetrics,
+  METRICS_PATH
+};

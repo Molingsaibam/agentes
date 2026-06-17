@@ -1,48 +1,36 @@
-import fs from 'fs/promises'
+import fs from 'fs'
 import path from 'path'
 
-const databasePath = path.join(process.cwd(), 'server', 'database', 'database.json')
+const dbPath = path.join(process.cwd(), 'server', 'database', 'database.json')
 
-export async function loadDatabase(){
+function readDb(){
   try{
-    const raw = await fs.readFile(databasePath, 'utf8')
-    const database = JSON.parse(raw)
-
-    return {
-      jobs: Array.isArray(database.jobs) ? database.jobs : []
-    }
-  }catch(error){
-    if(error.code !== 'ENOENT'){
-      console.warn('database load failed:', error.message)
-    }
-
-    return { jobs: [] }
+    const raw = fs.readFileSync(dbPath, 'utf8')
+    return JSON.parse(raw)
+  }catch(e){
+    return { reports: [] }
   }
+}
+
+function writeDb(obj){
+  fs.writeFileSync(dbPath, JSON.stringify(obj, null, 2), 'utf8')
+}
+
+export async function listJobs(limit = 50){
+  const db = readDb()
+  const jobs = db.reports || []
+  return jobs.slice(-limit).reverse()
 }
 
 export async function saveJob(job){
-  const database = await loadDatabase()
-  const existingIndex = database.jobs.findIndex(item => item.id === job.id)
-  const savedJob = {
-    ...job,
-    updated_at: new Date().toISOString()
-  }
-
-  if(existingIndex >= 0){
-    database.jobs[existingIndex] = savedJob
+  const db = readDb()
+  db.reports = db.reports || []
+  const idx = db.reports.findIndex(j => j.id === job.id)
+  if(idx >= 0){
+    db.reports[idx] = job
   }else{
-    database.jobs.unshift(savedJob)
+    db.reports.push(job)
   }
-
-  database.jobs = database.jobs.slice(0, 100)
-
-  await fs.mkdir(path.dirname(databasePath), { recursive: true })
-  await fs.writeFile(databasePath, JSON.stringify(database, null, 2), 'utf8')
-
-  return savedJob
-}
-
-export async function listJobs(limit = 20){
-  const database = await loadDatabase()
-  return database.jobs.slice(0, limit)
+  writeDb(db)
+  return job
 }

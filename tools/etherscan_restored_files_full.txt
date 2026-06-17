@@ -1,0 +1,5 @@
+﻿D:\Users\guibi\bb\agentes\server\agents\gitAgent.js.bak
+D:\Users\guibi\bb\agentes\server\agents\etherscan\index.js.bak
+D:\Users\guibi\bb\agentes\server\utils\etherscan_client.js.bak
+D:\Users\guibi\bb\agentes\tools\auto_replace_etherscan_calls.js.bak
+D:\Users\guibi\bb\agentes\tools\scan_etherscan_calls.js.bak

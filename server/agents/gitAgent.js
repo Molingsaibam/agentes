@@ -1,0 +1,199 @@
+import axios from 'axios'
+import etherscan from './etherscan/index.js'
+const etherscanClient = require('../utils/etherscan_client');
+const contractRiskAgent = require('./contractRiskAgent');
+
+const DEFAULT_TRACKED = {
+  ZEC: 'zcash/zcash',
+  ETH: 'ethereum/go-ethereum',
+  LINK: 'smartcontractkit/chainlink'
+}
+
+function makeHeaders(){
+  const headers = { 'User-Agent': 'market-agents' }
+  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN
+  if(token){
+    headers['Authorization'] = `token ${token}`
+  }
+  return headers
+}
+
+async function getCommits(repo, per = 5){
+  const url = `https://api.github.com/repos/${repo}/commits?per_page=${per}`
+  const res = await axios.get(url, { headers: makeHeaders() })
+  return res.data || []
+}
+
+async function getCommitDetail(repo, sha){
+  const url = `https://api.github.com/repos/${repo}/commits/${sha}`
+  const res = await axios.get(url, { headers: makeHeaders() })
+  return res.data
+}
+
+function scoreFiles(files = []){
+  const high = ['consensus','privacy','wallet','core','protocol','zk','bridge','lib','src']
+  const medium = ['security','attack','vuln','exploit','fix','bug','hotfix']
+  const low = ['readme','docs','test','ci','build','chore']
+
+  let score = 0
+  const reasons = []
+
+  files.forEach(f=>{
+    const p = (f.filename || '').toLowerCase()
+    for(const k of high){ if(p.includes(k)){ score += 5; reasons.push({file:p, reason:`alteração em área crítica: ${k}`}); return } }
+    for(const k of medium){ if(p.includes(k)){ score += 2; reasons.push({file:p, reason:`possível impacto técnico: ${k}`}); return } }
+    for(const k of low){ if(p.includes(k)){ score += 0; return } }
+    if(p.match(/\.(c|cpp|rs|go|js|ts|py|java|sol)$/)){
+      score += 1
+      reasons.push({file:p, reason:'arquivo de código modificado'})
+    }
+  })
+
+  return { score, reasons }
+}
+
+function explainCommit(commit, scoring){
+  const msg = commit.commit && commit.commit.message ? commit.commit.message.split('\n')[0] : ''
+  const author = commit.commit && commit.commit.author ? commit.commit.author.name : 'unknown'
+  const date = commit.commit && commit.commit.author ? commit.commit.author.date : ''
+
+  const topFiles = (scoring.reasons || []).slice(0,5).map(r=>`- ${r.file}: ${r.reason}`)
+
+  const explanation = `Commit: ${msg}\nAutor: ${author}\nData: ${date}\nPontuação: ${scoring.score}\nArquivos relevantes:\n${topFiles.join('\n')}`
+
+  return explanation
+}
+
+// Helper non-invasive: obter ABI via etherscan_client
+// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
+// async function getAbiFromEtherscan(address, apiKey) {
+// Suggested replacement (example):
+// const etherscanClient = require('../server/utils/etherscan_client');
+// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
+// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
+// [ETHERSCAN-AUTOREPLACE-END]
+  try {
+    return await etherscanClient.getContractABI(address, apiKey);
+  } catch (err) {
+    console.error('[gitAgent][Etherscan] getContractABI failed for', address, err.message);
+    throw err;
+  }
+}
+
+// Novo: analisar contratos encontrados usando contractRiskAgent
+async function analyzeContractsInRepo(addresses, apiKey) {
+  const results = [];
+  if (!addresses || addresses.length === 0) return results;
+
+  for (const addr of addresses) {
+    try {
+      console.log('[gitAgent] obtendo ABI para', addr);
+// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
+//       const abi = await getAbiFromEtherscan(addr, apiKey);
+// Suggested replacement (example):
+// const etherscanClient = require('../server/utils/etherscan_client');
+// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
+// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
+// [ETHERSCAN-AUTOREPLACE-END]
+      console.log('[gitAgent] ABI obtida, executando contractRiskAgent');
+      const analysis = await contractRiskAgent.analyzeContract(addr, apiKey, { abi });
+      results.push(analysis);
+      console.log('[gitAgent] analysis result for', addr, JSON.stringify(analysis));
+    } catch (err) {
+      console.error('[gitAgent] erro ao analisar contrato', addr, err.message);
+      results.push({ address: addr, error: err.message });
+    }
+  }
+
+  return results;
+}
+
+// Export helper to run contract analysis from outside (jobs/test harness)
+module.exports.runContractAnalysisForFoundContracts = async function(addresses, apiKey) {
+  return await analyzeContractsInRepo(addresses, apiKey);
+};
+
+async function fetchAbisFromCommit(detail){
+  const abis = []
+  try{
+    const files = detail.files || []
+    // extrair endereços 0x...40hex de patches e da mensagem
+    const addrRe = /0x[a-fA-F0-9]{40}/g
+    const found = new Set()
+
+    if(detail.commit && detail.commit.message){
+      const m = detail.commit.message.match(addrRe)
+      if(m) m.forEach(a=>found.add(a))
+    }
+
+    for(const f of files){
+      if(f.patch && typeof f.patch === 'string'){
+        const m = f.patch.match(addrRe)
+        if(m) m.forEach(a=>found.add(a))
+      }
+      // se arquivo solidity foi modificado, registrar filename
+      if((f.filename || '').toLowerCase().endsWith('.sol')){
+        abis.push({ file: f.filename, note: 'solidity file changed' })
+      }
+    }
+
+    // consultar etherscan para cada endereço encontrado
+    for(const addr of Array.from(found)){
+      try{
+        const res = await etherscan.getContractABI(addr)
+        abis.push({ address: addr, abiResult: res })
+      }catch(e){
+        abis.push({ address: addr, error: e.message })
+      }
+    }
+  }catch(e){
+    // ignore
+  }
+  return abis
+}
+
+export async function scanRepos(tracked = DEFAULT_TRACKED){
+  const out = {}
+
+  const entries = Object.entries(tracked)
+
+  for(const [symbol, repo] of entries){
+    try{
+      const commits = await getCommits(repo, 5)
+      const analysed = []
+
+      for(const c of commits){
+        try{
+          const detail = await getCommitDetail(repo, c.sha)
+          const files = detail.files || []
+          const scoring = scoreFiles(files)
+
+          // tentar extrair ABIs/endereços relacionados
+          const abis = await fetchAbisFromCommit(detail)
+
+          const explanation = explainCommit(detail, scoring)
+
+          analysed.push({ sha: c.sha, message: c.commit.message, author: c.commit.author, date: c.commit.author.date, url: c.html_url, files: files.map(f=>f.filename), score: scoring.score, explanation, abis })
+        }catch(e){
+          analysed.push({ sha: c.sha, error: e.message })
+        }
+      }
+
+      // escolher commit com maior score
+      analysed.sort((a,b)=> (b.score||0) - (a.score||0))
+
+      out[symbol] = {
+        repo,
+        top: analysed[0] || null,
+        recent: analysed
+      }
+
+    }catch(e){
+      out[symbol] = { repo, error: e.message }
+    }
+  }
+
+  return out
+}
+
+export default { scanRepos }
