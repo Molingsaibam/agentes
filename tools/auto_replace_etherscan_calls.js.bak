@@ -1,0 +1,75 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const root = path.resolve(__dirname, '..');
+const patterns = [
+  /etherscan\.io/i,
+  /api\.etherscan/i,
+  /tokenholderlist/i,
+  /getabi/i
+];
+
+const apply = process.argv[2] === 'apply';
+
+function scanDir(dir) {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const e of entries) {
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) {
+      if (['node_modules', '.git'].includes(e.name)) continue;
+      scanDir(full);
+    } else if (e.isFile()) {
+      if (!full.endsWith('.js') && !full.endsWith('.mjs') && !full.endsWith('.ts')) continue;
+      try {
+        const text = fs.readFileSync(full, 'utf8');
+        const lines = text.split(/\r?\n/);
+        let changed = false;
+        const out = [];
+        for (let i = 0; i < lines.length; i++) {
+          const L = lines[i];
+          let matched = false;
+          for (const p of patterns) {
+            if (p.test(L)) { matched = true; break; }
+          }
+          if (matched) {
+            // Backup file first time
+            if (!fs.existsSync(full + '.bak')) {
+              fs.writeFileSync(full + '.bak', text, 'utf8');
+              console.log('[BACKUP] created', full + '.bak');
+            }
+
+            if (apply) {
+              out.push('// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.');
+              out.push(`// ${L.replace(/\\/g,'\\\\')}`);
+              out.push(`// Suggested replacement (example):`);
+              out.push(`// const etherscanClient = require('../server/utils/etherscan_client');`);
+              out.push(`// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);`);
+              out.push(`// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);`);
+              out.push('// [ETHERSCAN-AUTOREPLACE-END]');
+            } else {
+              out.push('// [ETHERSCAN-AUTOREPLACE] Original line follows; replace with etherscan_client helper');
+              out.push(L);
+              out.push('// [ETHERSCAN-AUTOREPLACE-END]');
+            }
+            changed = true;
+          } else {
+            out.push(L);
+          }
+        }
+        if (changed) {
+          fs.writeFileSync(full, out.join('\n'), 'utf8');
+          console.log((apply ? '[REPLACED]' : '[MARKED]'), full);
+        }
+      } catch (err) {
+        console.error('Error processing', full, err.message);
+      }
+    }
+  }
+}
+
+console.log((apply ? 'Applying replacements' : 'Scanning and marking') + ' Etherscan direct usages...');
+scanDir(root);
+console.log('Done. Review .bak files and lines marked with [ETHERSCAN-AUTOREPLACE].');

@@ -52,27 +52,9 @@ const dictionary = new Map([
   ['rwa', 'RWA']
 ])
 
-export async function translateNews(news=[]){
-  const items = Array.isArray(news) ? news : []
-
-  const translated = []
-
-  for(const item of items){
-    const title = await translateText(item?.title || '')
-    const body = await translateText(item?.body || '')
-
-    translated.push({
-      ...item,
-      translated:{
-        language:'pt-BR',
-        title: title.text,
-        body: body.text,
-        mode: title.mode === body.mode ? title.mode : `${title.mode}/${body.mode}`
-      }
-    })
-  }
-
-  return translated
+export async function translateNews(news = []){
+  // Placeholder: retorna as notícias sem alteração
+  return news
 }
 
 async function translateText(value){

@@ -1,14 +1,43 @@
 ﻿import axios from 'axios'
 import fs from 'fs'
 import path from 'path'
+import { fileURLToPath } from 'url'
 import { XMLParser } from 'fast-xml-parser'
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const CRYPTOCOMPARE_URL = 'https://min-api.cryptocompare.com/data/v2/news/'
 const RSS_FALLBACK_URL = 'https://cointelegraph.com/rss'
+const SAMPLE_PATH = path.join(__dirname, 'sample_news.json')
 
 export async function collectCoinData(symbol){
   const normalizedSymbol = String(symbol || '').trim().toUpperCase()
+
+  // permitir forçar uso de sample via env
+  const useSample = process.env.COLLECTOR_USE_SAMPLE === '1'
+
+  if(useSample){
+    try{
+      const raw = fs.readFileSync(SAMPLE_PATH, 'utf8')
+      const sample = JSON.parse(raw)
+      return { symbol: normalizedSymbol, collected_at:new Date().toISOString(), news: sample }
+    }catch(e){
+      // fallback to empty
+      return { symbol: normalizedSymbol, collected_at:new Date().toISOString(), news: [] }
+    }
+  }
+
   const payload = await collectNewsPayload(symbol)
+
+  // Se payload sem notícias, tentar sample local antes de retornar vazio
+  if(!payload || !Array.isArray(payload.news) || payload.news.length === 0){
+    try{
+      if(fs.existsSync(SAMPLE_PATH)){
+        const raw = fs.readFileSync(SAMPLE_PATH, 'utf8')
+        const sample = JSON.parse(raw)
+        return { symbol: normalizedSymbol, source: 'sample', collected_at:new Date().toISOString(), news: sample }
+      }
+    }catch(err){ /* ignore */ }
+  }
 
   if(process.env.COLLECTOR_DEBUG === '1'){
     saveDebugPayload(symbol, payload)
@@ -24,7 +53,7 @@ export async function collectCoinData(symbol){
 
 async function collectNewsPayload(symbol){
   try{
-    const news = await fetchCryptoCompareNews()
+    const news = await fetchCryptoCompareNews(symbol)
     if(news.length > 0){
       return { source: 'cryptocompare', news }
     }
@@ -32,8 +61,16 @@ async function collectNewsPayload(symbol){
     console.warn('CryptoCompare news unavailable:', error.message)
   }
 
-  const news = await fetchRssNews(symbol)
-  return { source: 'cointelegraph-rss', news }
+  try{
+    const news = await fetchRssNews(symbol)
+    if(news.length > 0){
+      return { source: 'cointelegraph-rss', news }
+    }
+  }catch(err){
+    console.warn('RSS fallback failed:', err.message)
+  }
+
+  return { source: 'none', news: [] }
 }
 
 async function fetchCryptoCompareNews(){
@@ -115,7 +152,6 @@ function saveDebugPayload(symbol, payload){
     const fname = `collector-${Date.now()}.json`
     const out = { symbol, fetched_at: new Date().toISOString(), payload }
     fs.writeFileSync(path.join(logsDir, fname), JSON.stringify(out, null, 2), 'utf8')
-    console.log('collector: payload saved to', path.join('server', 'logs', fname))
   }catch(error){
     console.warn('collector debug write failed', error.message)
   }

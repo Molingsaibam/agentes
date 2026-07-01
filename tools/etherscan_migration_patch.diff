@@ -1,0 +1,468 @@
+﻿diff --git "D:\\Users\\guibi\\bb\\agentes\\server\\agents\\gitAgent.js.bak" "D:\\Users\\guibi\\bb\\agentes\\server\\agents\\gitAgent.js"
+index d9d7a63..c62a9ff 100644
+--- "D:\\Users\\guibi\\bb\\agentes\\server\\agents\\gitAgent.js.bak"
++++ "D:\\Users\\guibi\\bb\\agentes\\server\\agents\\gitAgent.js"
+@@ -65,7 +65,13 @@ function explainCommit(commit, scoring){
+ }
+ 
+ // Helper non-invasive: obter ABI via etherscan_client
+-async function getAbiFromEtherscan(address, apiKey) {
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// async function getAbiFromEtherscan(address, apiKey) {
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
+   try {
+     return await etherscanClient.getContractABI(address, apiKey);
+   } catch (err) {
+@@ -82,7 +88,13 @@ async function analyzeContractsInRepo(addresses, apiKey) {
+   for (const addr of addresses) {
+     try {
+       console.log('[gitAgent] obtendo ABI para', addr);
+-      const abi = await getAbiFromEtherscan(addr, apiKey);
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++//       const abi = await getAbiFromEtherscan(addr, apiKey);
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
+       console.log('[gitAgent] ABI obtida, executando contractRiskAgent');
+       const analysis = await contractRiskAgent.analyzeContract(addr, apiKey, { abi });
+       results.push(analysis);
+diff --git "D:\\Users\\guibi\\bb\\agentes\\server\\agents\\etherscan\\index.js.bak" "D:\\Users\\guibi\\bb\\agentes\\server\\agents\\etherscan\\index.js"
+index d24dc44..b5a7a4c 100644
+--- "D:\\Users\\guibi\\bb\\agentes\\server\\agents\\etherscan\\index.js.bak"
++++ "D:\\Users\\guibi\\bb\\agentes\\server\\agents\\etherscan\\index.js"
+@@ -32,11 +32,65 @@ export async function getContractABI(address){
+   }
+ 
+   const key = process.env.ETHERSCAN_KEY || process.env.ETHERSCAN_API_KEY || ''
+-  const url = `https://api.etherscan.io/api`
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// // // // // // // //   const url = `https://api.etherscan.io/api`
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
+ 
+   const params = {
+     module: 'contract',
+-    action: 'getabi',
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++//     action: 'getabi',
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
+     address: addr
+   }
+   if(key) params.apikey = key
+diff --git "D:\\Users\\guibi\\bb\\agentes\\server\\utils\\etherscan_client.js.bak" "D:\\Users\\guibi\\bb\\agentes\\server\\utils\\etherscan_client.js"
+index f8cfa42..92eeb33 100644
+--- "D:\\Users\\guibi\\bb\\agentes\\server\\utils\\etherscan_client.js.bak"
++++ "D:\\Users\\guibi\\bb\\agentes\\server\\utils\\etherscan_client.js"
+@@ -3,7 +3,55 @@ const path = require('path');
+ const axios = require('axios');
+ 
+ const METRICS_PATH = path.resolve(__dirname, '..', 'logs', 'etherscan_metrics.json');
+-const DEFAULT_ENDPOINT = 'https://api.etherscan.io/api';
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// // // // // // // // const DEFAULT_ENDPOINT = 'https://api.etherscan.io/api';
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
+ 
+ function _ensureMetrics() {
+   try {
+@@ -74,6 +122,10 @@ async function getContractABI(address, apiKey, options = {}) {
+     if (data.result && typeof data.result === 'string') {
+       try {
+         const abi = JSON.parse(data.result);
++        // increment contracts_analyzed metric
++        const m = _ensureMetrics();
++        m.etherscan.contracts_analyzed = (m.etherscan.contracts_analyzed || 0) + 1;
++        _saveMetrics(m);
+         // Could implement cache hits/misses here if desired
+         return abi;
+       } catch (err) {
+@@ -139,6 +191,10 @@ async function getTokenHolders(address, apiKey, options = {}) {
+ 
+     // Expect data.result to be an array
+     if (data.result && Array.isArray(data.result)) {
++      // increment holders_analyzed metric
++      const m2 = _ensureMetrics();
++      m2.etherscan.holders_analyzed = (m2.etherscan.holders_analyzed || 0) + 1;
++      _saveMetrics(m2);
+       return data.result;
+     }
+ 
+@@ -156,7 +212,7 @@ async function getTokenHolders(address, apiKey, options = {}) {
+ 
+ function getMetrics() {
+   const metrics = _ensureMetrics();
+-  return metrics.etherscan || { status: 'unknown', requests: 0, cache_hits: 0, cache_misses: 0, errors: 0 };
++  return metrics.etherscan || { status: 'unknown', requests: 0, cache_hits: 0, cache_misses: 0, errors: 0, holders_analyzed: 0, contracts_analyzed: 0 };
+ }
+ 
+ module.exports = {
+diff --git "D:\\Users\\guibi\\bb\\agentes\\tools\\auto_replace_etherscan_calls.js.bak" "D:\\Users\\guibi\\bb\\agentes\\tools\\auto_replace_etherscan_calls.js"
+index 422609e..95a4d90 100644
+--- "D:\\Users\\guibi\\bb\\agentes\\tools\\auto_replace_etherscan_calls.js.bak"
++++ "D:\\Users\\guibi\\bb\\agentes\\tools\\auto_replace_etherscan_calls.js"
+@@ -8,12 +8,69 @@ const root = path.resolve(__dirname, '..');
+ const patterns = [
+   /etherscan\.io/i,
+   /api\.etherscan/i,
+-  /tokenholderlist/i,
+-  /getabi/i
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++//   /tokenholderlist/i,
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++//   /getabi/i
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
+ ];
+ 
+ const apply = process.argv[2] === 'apply';
+ 
++// migration report collector
++const report = {
++  timestamp: new Date().toISOString(),
++  filesModified: {},
++  backupsCreated: [],
++  totalMatches: 0,
++  totalReplacements: 0
++};
++
++function writeReport() {
++  try {
++    // if no backups were recorded (because .bak already existed), collect existing .bak files under repo
++    if (!report.backupsCreated || report.backupsCreated.length === 0) {
++      const bakFiles = [];
++      function collectBaks(dir) {
++        const entries = fs.readdirSync(dir, { withFileTypes: true });
++        for (const e of entries) {
++          const full = path.join(dir, e.name);
++          if (e.isDirectory()) {
++            if (['node_modules', '.git'].includes(e.name)) continue;
++            collectBaks(full);
++          } else if (e.isFile() && full.endsWith('.bak')) {
++            bakFiles.push(path.resolve(full));
++          }
++        }
++      }
++      try {
++        collectBaks(root);
++        report.backupsCreated = Array.from(new Set(bakFiles));
++      } catch (err) {
++        // ignore errors collecting baks
++      }
++    }
++
++    // dedupe backups in case of duplicates
++    report.backupsCreated = Array.from(new Set(report.backupsCreated));
++    const outPath = path.join(__dirname, '..', 'tools', 'etherscan_migration_report.json');
++    fs.writeFileSync(outPath, JSON.stringify(report, null, 2), 'utf8');
++    console.log('[REPORT] written', outPath);
++    console.log('[REPORT] totals -> matches:', report.totalMatches, 'replacements:', report.totalReplacements, 'files:', Object.keys(report.filesModified).length);
++  } catch (err) {
++    console.error('[REPORT] write failed', err.message);
++  }
++}
++
+ function scanDir(dir) {
+   const entries = fs.readdirSync(dir, { withFileTypes: true });
+   for (const e of entries) {
+@@ -37,8 +94,10 @@ function scanDir(dir) {
+           if (matched) {
+             // Backup file first time
+             if (!fs.existsSync(full + '.bak')) {
+-              fs.writeFileSync(full + '.bak', text, 'utf8');
+-              console.log('[BACKUP] created', full + '.bak');
++              const bakPath = path.resolve(full + '.bak');
++              fs.writeFileSync(bakPath, text, 'utf8');
++              console.log('[BACKUP] created', bakPath);
++              report.backupsCreated.push(bakPath);
+             }
+ 
+             if (apply) {
+@@ -49,10 +108,14 @@ function scanDir(dir) {
+               out.push(`// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);`);
+               out.push(`// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);`);
+               out.push('// [ETHERSCAN-AUTOREPLACE-END]');
++              report.totalReplacements++;
++              report.filesModified[full] = (report.filesModified[full] || 0) + 1;
+             } else {
+               out.push('// [ETHERSCAN-AUTOREPLACE] Original line follows; replace with etherscan_client helper');
+               out.push(L);
+               out.push('// [ETHERSCAN-AUTOREPLACE-END]');
++              report.totalMatches++;
++              report.filesModified[full] = (report.filesModified[full] || 0) + 1;
+             }
+             changed = true;
+           } else {
+@@ -61,7 +124,9 @@ function scanDir(dir) {
+         }
+         if (changed) {
+           fs.writeFileSync(full, out.join('\n'), 'utf8');
+-          console.log((apply ? '[REPLACED]' : '[MARKED]'), full);
++          const count = report.filesModified[full] || 0;
++          console.log((apply ? '[REPLACED]' : '[MARKED]'), full, '-', count, 'match(es)');
++          // keep report.filesModified[full] as the numeric count (already incremented above)
+         }
+       } catch (err) {
+         console.error('Error processing', full, err.message);
+@@ -72,4 +137,5 @@ function scanDir(dir) {
+ 
+ console.log((apply ? 'Applying replacements' : 'Scanning and marking') + ' Etherscan direct usages...');
+ scanDir(root);
++writeReport();
+ console.log('Done. Review .bak files and lines marked with [ETHERSCAN-AUTOREPLACE].');
+diff --git "D:\\Users\\guibi\\bb\\agentes\\tools\\scan_etherscan_calls.js.bak" "D:\\Users\\guibi\\bb\\agentes\\tools\\scan_etherscan_calls.js"
+index b132c13..8be5461 100644
+--- "D:\\Users\\guibi\\bb\\agentes\\tools\\scan_etherscan_calls.js.bak"
++++ "D:\\Users\\guibi\\bb\\agentes\\tools\\scan_etherscan_calls.js"
+@@ -1,12 +1,138 @@
+-const fs = require('fs');
+-const path = require('path');
++import fs from 'fs';
++import path from 'path';
++import { fileURLToPath } from 'url';
++const __filename = fileURLToPath(import.meta.url);
++const __dirname = path.dirname(__filename);
+ 
+ const root = path.resolve(__dirname, '..');
+ const patterns = [
+-  'etherscan.io',
+-  'api.etherscan',
+-  'tokenholderlist',
+-  'getabi',
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// // // // // // // //   'etherscan.io',
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++// // // // // // // //   'api.etherscan',
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++//   'tokenholderlist',
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
++// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
++//   'getabi',
++// Suggested replacement (example):
++// const etherscanClient = require('../server/utils/etherscan_client');
++// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
++// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
++// [ETHERSCAN-AUTOREPLACE-END]
+   'module:\s*"contract"',
+   'module:\s*"token"'
+ ];

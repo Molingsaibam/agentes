@@ -20,6 +20,10 @@ server/
     security/index.js
     spam/index.js
     translator/index.js
+    gitAgent.js
+    intelligence/index.js
+    market/index.js
+    backtest/index.js
   database/database.json
   logs/.gitkeep
 package.json
@@ -72,6 +76,10 @@ risk-agent       http://localhost:3106/health
 sentiment-agent  http://localhost:3104/health
 translator-agent http://localhost:3107/health
 community-agent  http://localhost:3108/health
+git-agent        http://localhost:3109/health
+intelligence-agent http://localhost:3110/health
+market-agent     http://localhost:3111/health
+backtest-agent   http://localhost:3112/health
 ```
 
 Para verificar a conexao dos agentes pelo orquestrador:
@@ -112,4 +120,12 @@ Nunca coloque chaves de API no frontend ou no GitHub. Use sempre `.env`.
 ## Observacoes
 
 O coletor tenta usar CryptoCompare primeiro. Se a API pedir chave, ele usa RSS publico do Cointelegraph como fallback para manter o MVP funcionando.
+
+O Git Agent usa a API publica do GitHub para buscar commits, issues/PRs, releases e forks antes desses sinais virarem noticia. Para evitar rate limit, configure `GITHUB_TOKEN` no `.env`. Repos monitorados podem ser ajustados com `GITHUB_REPOS`, por exemplo `BTC=bitcoin/bitcoin,ETH=ethereum/go-ethereum`.
+
+O Intelligence Agent cruza noticias, risco, sentimento, contexto comunitario e GitHub para explicar segmentos, conflitos entre sinais, confianca e postura operacional.
+
+Fase 2 adiciona o Market Agent: ciclo BTC, probabilidade heuristica de altseason, regime risk-on/risk-off, rotacao setorial e saude basica do ativo usando dados publicos de mercado quando disponiveis.
+
+O Backtest Agent roda uma simulacao simples por simbolo usando coleta, filtro, sentimento e risco. Ele fica disponivel em `/backtest/run`, por exemplo `http://localhost:3000/backtest/run?symbols=BTC,ETH`.
 
