@@ -1,4 +1,4 @@
-const etherscan = require('../utils/etherscan_client');
+import etherscan from './etherscan/index.js';
 
 function _containsName(names, kw) {
   if (!names || names.length === 0) return false;
@@ -94,7 +94,11 @@ async function analyzeContract(address, apiKey, options = {}) {
   };
 
   try {
-    const abi = await etherscan.getContractABI(address, apiKey, options);
+    const abiResult = await etherscan.getContractABI(address, apiKey, options);
+    if (abiResult && abiResult.ok === false) {
+      throw new Error(abiResult.error || 'Etherscan ABI lookup failed');
+    }
+    const abi = abiResult && abiResult.ok === true ? abiResult.abi : abiResult;
     result.abi = abi;
 
     if (!abi || !Array.isArray(abi) || abi.length === 0) {
@@ -120,6 +124,6 @@ async function analyzeContract(address, apiKey, options = {}) {
   }
 }
 
-module.exports = {
+export default {
   analyzeContract
-};
+}

@@ -53,29 +53,50 @@ const dictionary = new Map([
 ])
 
 export async function translateNews(news = []){
-  // Placeholder: retorna as notícias sem alteração
-  return news
+  return Promise.all(news.map(async item => {
+    const title = item.title || ''
+    const body = item.body || ''
+    if(!title && !body) return item
+
+    try {
+      const titleResult = title ? await translateText(title) : { text:'', mode:'empty' }
+      const bodyResult = body ? translateWithGlossary(body) : ''
+
+      return {
+        ...item,
+        translated: {
+          title: titleResult.text || title,
+          body: bodyResult || body,
+          mode: body ? `${titleResult.mode}+local-glossary` : titleResult.mode
+        }
+      }
+    } catch (error) {
+      console.warn('translation failed:', error.message)
+      return {
+        ...item,
+        translated: {
+          title,
+          body,
+          mode: 'fallback-original'
+        }
+      }
+    }
+  }))
 }
 
 async function translateText(value){
   const text = String(value || '').trim()
   if(!text) return { text:'', mode:'empty' }
 
-  if(getTranslationMode() === 'mymemory'){
+  const mode = getTranslationMode()
+  if(mode === 'mymemory'){
     try{
-      return {
-        text: await translateWithMyMemory(text),
-        mode:'mymemory'
-      }
+      return { text: await translateWithMyMemory(text), mode: 'mymemory' }
     }catch(error){
       console.warn('translation fallback:', error.message)
     }
   }
-
-  return {
-    text: translateWithGlossary(text),
-    mode:'local-glossary'
-  }
+  return { text: translateWithGlossary(text), mode: 'local-glossary' }
 }
 
 async function translateWithMyMemory(text){

@@ -352,7 +352,7 @@ function summarizeMarket(target, profile){
   }
 }
 
-function buildMarketMetrics({ global, target, btc, eth, btcCycle, altCycle, riskRegime, targetHealth }){
+function buildMarketMetrics({ global, target, btc: _btc, eth: _eth, btcCycle, altCycle, riskRegime, targetHealth }){
   return [
     metric('btc_dominance', 'Dominancia BTC', btcCycle.dominance, 'Quanto do market cap cripto esta concentrado em BTC. Alta dominancia costuma favorecer leitura BTC-led.'),
     metric('btc_7d', 'BTC 7d', btcCycle.btc_change_7d, 'Momentum curto de BTC. Ajuda a separar lideranca de medo.'),
@@ -365,7 +365,7 @@ function buildMarketMetrics({ global, target, btc, eth, btcCycle, altCycle, risk
   ]
 }
 
-function buildMarketExplanation({ normalizedSymbol, profile, btcCycle, altCycle, riskRegime, targetHealth, rotation, errors }){
+function buildMarketExplanation({ normalizedSymbol, profile: _profile, btcCycle, altCycle, riskRegime, targetHealth, rotation, errors }){
   const parts = [
     `${normalizedSymbol}: ${targetHealth.interpretation}`,
     `BTC cycle: ${btcCycle.interpretation}`,

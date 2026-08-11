@@ -6,7 +6,7 @@ import { assessRisk } from '../risk/index.js'
 export async function runBacktests(tracked = { BTC: 'bitcoin/bitcoin', ETH: 'ethereum/go-ethereum' }){
   const out = {}
 
-  for(const [symbol, repoOrPlaceholder] of Object.entries(tracked)){
+  for(const [symbol] of Object.entries(tracked)){
     try{
       // usar symbol para coleta (collector ignora repo placeholder)
       const coin = await collectCoinData(symbol)

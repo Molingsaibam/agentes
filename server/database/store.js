@@ -18,7 +18,12 @@ function writeDb(obj){
 
 export async function listJobs(limit = 50){
   const db = readDb()
-  const jobs = db.reports || []
+  const byId = new Map()
+  for(const job of [...(db.jobs || []), ...(db.reports || [])]){
+    if(job?.id) byId.set(job.id, job)
+  }
+  const jobs = [...byId.values()]
+    .sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0))
   return jobs.slice(-limit).reverse()
 }
 

@@ -1,17 +1,20 @@
-﻿import { collectCoinData } from './server/agents/collector/index.js'
+import 'dotenv/config'
+import { collectCoinData } from './server/agents/collector/index.js'
 import { filterNews } from './server/agents/filter/index.js'
 import { sentimentAnalysis } from './server/agents/sentiment/index.js'
 import { validateSecurity } from './server/agents/security/index.js'
 import gitAgent from './server/agents/gitAgent.js'
 
+
 async function main(){
   const symbol = process.argv[2] || 'BTC'
+  let sec
 
   console.log('=== Teste de agentes para symbol =', symbol)
 
   try{
     console.log('\n-> Security:')
-    const sec = await validateSecurity(symbol)
+    sec = await validateSecurity(symbol)
     console.log(sec)
   }catch(e){
     console.error('Security error:', e.message)
@@ -78,7 +81,7 @@ async function main(){
 
         // Integrar HolderAnalysisAgent para cada análise
         try {
-          const holderAgent = require('./server/agents/holderAnalysisAgent');
+          const holderAgent = (await import('./server/agents/holderAnalysisAgent.js')).default
           for (let i=0;i<jobResult.contract_analysis.length;i++) {
             const ca = jobResult.contract_analysis[i]
             try {
@@ -113,10 +116,8 @@ main()
 // ContractRiskAgent integration (non-invasive): if test script exposes contractsFound/global.contracts or env CONTRACT_ADDRESSES, analyze them automatically
 ;(async () => {
   try {
-    const path = require('path');
-    const contractAgentPath = path.resolve(__dirname, 'server', 'agents', 'contractRiskAgent.js');
     let contractAgent = null;
-    try { contractAgent = require(contractAgentPath); } catch (e) { /* agent not available, skip */ }
+    try { contractAgent = (await import(`./server/agents/contractRiskAgent.js`)).default; } catch (e) { /* agent not available, skip */ }
 
     if (!contractAgent) {
       console.log('[ContractRisk] contractRiskAgent not found, skipping integration');
@@ -142,14 +143,7 @@ main()
         console.log(`[ContractRisk] analisando: ${addr}`);
         const res = await contractAgent.analyzeContract(addr, etherscanKey);
         console.log('[ContractRisk] resultado:', JSON.stringify(res, null, 2));
-        // se existir um objeto final de job, tente anexar os dados para que apareçam nos logs
-        try {
-          if (typeof jobResult !== 'undefined' && jobResult && typeof jobResult === 'object') {
-            jobResult.contract_analysis = jobResult.contract_analysis || [];
-            jobResult.contract_analysis.push(res);
-            jobResult.contract_risk_count = (jobResult.contract_risk_count || 0) + (res.contract_score && res.contract_score > 0 ? 1 : 0);
-          }
-        } catch(e) { /* ignore */ }
+        // jobResult lives in a separate scope; result is logged above
       } catch (err) {
         console.error('[ContractRisk] erro analisando', addr, err.message);
       }
@@ -158,5 +152,3 @@ main()
     console.error('[ContractRisk] integração falhou', err.message);
   }
 })();
-
-

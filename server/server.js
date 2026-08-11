@@ -15,6 +15,9 @@ import gitAgent from './agents/gitAgent.js'
 import { analyzeCommunityContext } from './agents/community/index.js'
 import { listJobs, saveJob } from './database/store.js'
 import { analyzeContract } from './agents/contractRisk/index.js'
+import { analyzeIntelligence } from './agents/intelligence/index.js'
+import { analyzeMarketCycle } from './agents/market/index.js'
+import { runBacktests } from './agents/backtest/index.js'
 
 dotenv.config()
 
@@ -80,7 +83,7 @@ savedJobs.forEach(job => {
 
 app.get('/health', async (req, res) => {
   try{
-    const agentNames = ['security','collector','spam','filter','risk','sentiment','translator','community','git','etherscan']
+    const agentNames = ['security','collector','spam','filter','risk','sentiment','translator','community','git','intelligence','market','backtest','etherscan']
     const checks = await Promise.all(agentNames.map(name => checkAgent(name, process.env[`${name.toUpperCase()}_AGENT_URL`])))
 
     const agents = {}
@@ -91,7 +94,7 @@ app.get('/health', async (req, res) => {
         status: c?.status || null,
         url: c?.url || null,
         error: c?.error || null,
-        latency: c?.latency || null
+        latency_ms: c?.latency_ms || null
       }
     })
 
@@ -116,27 +119,43 @@ app.get('/health', async (req, res) => {
     const health = { status: overall, server: serverInfo, agents }
     if(etherscanMetrics) health.etherscan = etherscanMetrics
 
-    res.json({ status: overall, server: serverInfo, agents })
+    res.json(health)
   }catch(err){
     res.status(500).json({ status: 'error', error: err.message })
   }
 })
 
 app.get('/agents', async (req,res)=>{
-  const agents = await Promise.all([
-    checkAgent('security', process.env.SECURITY_AGENT_URL),
-    checkAgent('collector', process.env.COLLECTOR_AGENT_URL),
-    checkAgent('spam', process.env.SPAM_AGENT_URL),
-    checkAgent('filter', process.env.FILTER_AGENT_URL),
-    checkAgent('risk', process.env.RISK_AGENT_URL),
-    checkAgent('sentiment', process.env.SENTIMENT_AGENT_URL),
-    checkAgent('translator', process.env.TRANSLATOR_AGENT_URL),
-    checkAgent('community', process.env.COMMUNITY_AGENT_URL),
-    checkAgent('git', process.env.GIT_AGENT_URL),
-    checkAgent('etherscan', process.env.ETHERSCAN_AGENT_URL)
-  ])
+  const agentDefs = [
+    { name: 'security',    url: process.env.SECURITY_AGENT_URL },
+    { name: 'collector',   url: process.env.COLLECTOR_AGENT_URL },
+    { name: 'spam',        url: process.env.SPAM_AGENT_URL },
+    { name: 'filter',      url: process.env.FILTER_AGENT_URL },
+    { name: 'risk',        url: process.env.RISK_AGENT_URL },
+    { name: 'sentiment',   url: process.env.SENTIMENT_AGENT_URL },
+    { name: 'translator',  url: process.env.TRANSLATOR_AGENT_URL },
+    { name: 'community',   url: process.env.COMMUNITY_AGENT_URL },
+    { name: 'git',         url: process.env.GIT_AGENT_URL },
+    { name: 'intelligence',url: process.env.INTELLIGENCE_AGENT_URL },
+    { name: 'market',      url: process.env.MARKET_AGENT_URL },
+    { name: 'backtest',    url: process.env.BACKTEST_AGENT_URL }
+  ]
 
-  res.json({ agents })
+  const agents = await Promise.all(agentDefs.map(({ name, url }) => checkAgent(name, url)))
+
+  const online = agents.filter(a => a.ok).length
+  const offline = agents.filter(a => !a.ok && a.mode === 'container').length
+
+  res.json({
+    agents,
+    summary: {
+      total: agents.length,
+      online,
+      offline,
+      local: agents.filter(a => a.mode === 'local').length,
+      degraded: offline > 0
+    }
+  })
 })
 
 app.get('/jobs', async (req,res)=>{
@@ -146,6 +165,7 @@ app.get('/jobs', async (req,res)=>{
     jobs: savedJobs.map(job => ({
       id: job.id,
       symbol: job.symbol,
+      repo: job.repo || null,
       status: job.status,
       created_at: job.created_at,
       updated_at: job.updated_at,
@@ -178,21 +198,27 @@ app.get('/test-cmc', async (req, res) => {
 })
 
 app.post('/jobs', async (req,res)=>{
-  const { symbol } = req.body
+  const requestedSymbol = normalizeSymbolInput(req.body?.symbol)
+  const repo = normalizeRepoInput(req.body?.repo || req.body?.repository || req.body?.github_repo)
 
-  if(!symbol){
+  if(!requestedSymbol && !repo){
     return res.status(400).json({
-      error:'symbol required'
+      error:'symbol or repo required'
     })
   }
 
+  const repoOnly = !requestedSymbol && !!repo
+  const symbol = requestedSymbol || inferSymbolFromRepo(repo)
   const id = uuid()
+  const now = new Date().toISOString()
 
   jobs[id] = {
     id,
     symbol,
+    repo: repo || null,
     status:'processing',
-    created_at:new Date().toISOString()
+    created_at: now,
+    updated_at: now
   }
 
   await saveJob(jobs[id])
@@ -200,10 +226,13 @@ app.post('/jobs', async (req,res)=>{
   res.json({ id })
 
   try{
+    const security = repoOnly
+      ? { status:'secure', symbol, repo, checked_at:new Date().toISOString() }
+      : await runAgent('security', { symbol }, () => validateSecurity(symbol))
 
-    const security = await runAgent('security', { symbol }, () => validateSecurity(symbol))
-
-    const coin = await runAgent('collector', { symbol }, () => collectCoinData(symbol))
+    const coin = repoOnly
+      ? buildEmptyCoin(symbol, repo)
+      : await runAgent('collector', { symbol }, () => collectCoinData(symbol))
 
     const community = await runAgent('community', { symbol, news: coin.news }, () => analyzeCommunityContext(symbol, coin.news))
 
@@ -226,48 +255,37 @@ app.post('/jobs', async (req,res)=>{
       return translateNews(risk.news)
     })
 
-    // Executar Git Agent (local ou remoto)
-    const git = await runAgent('git', { symbol }, () => gitAgent.scanRepos())
+    const market = repoOnly
+      ? null
+      : await runAgent('market', { symbol }, () => analyzeMarketCycle(symbol))
 
-    // calcular métrica simples do git (maior score entre repos)
-    let gitTopScore = 0
-    let gitTop = null
-    try{
-      for(const [k,v] of Object.entries(git || {})){
-        if(v && v.top && (v.top.score || 0) > gitTopScore){
-          gitTopScore = v.top.score || 0
-          gitTop = { key:k, repo:v.repo, top:v.top }
-        }
-      }
-    }catch(e){ /* ignore parsing errors */ }
+    const gitPayload = buildGitPayload(symbol, repo)
+    const git = await runAgent('git', gitPayload, () => gitAgent.scanRepos(gitPayload))
+    const gitSummary = summarizeGitResult(git)
+    const contractRiskResults = analyzeContractsFromGit(git)
 
-    // executar contract risk para ABIs encontrados no git result
-    let contractRiskResults = {}
-    try{
-      const gitEntries = git || {}
-      for(const [symbol, data] of Object.entries(gitEntries)){
-        const recent = data.recent || []
-        for(const item of recent){
-          if(item.abis && Array.isArray(item.abis)){
-            for(const a of item.abis){
-              if(a.abiResult && a.abiResult.ok && a.abiResult.abi){
-                try{
-                  const ar = analyzeContract(a.abiResult.abi, a.address || null)
-                  contractRiskResults[a.address || a.file || `${symbol}-${item.sha}`] = ar
-                }catch(e){
-                  contractRiskResults[a.address || a.file || `${symbol}-${item.sha}`] = { error: e.message }
-                }
-              }
-            }
-          }
-        }
-      }
-    }catch(e){ /* ignore contract risk errors */ }
+    const intelligencePayload = {
+      symbol,
+      repo: repo || null,
+      security,
+      coin,
+      community,
+      spamChecked,
+      filtered,
+      risk,
+      sentiment,
+      translated,
+      market,
+      git,
+      contractRisk: contractRiskResults
+    }
+    const intelligence = await runAgent('intelligence', intelligencePayload, () => analyzeIntelligence(intelligencePayload))
 
     jobs[id] = {
       ...jobs[id],
       id,
       status:'finished',
+      updated_at:new Date().toISOString(),
       summary:{
         total_news: coin.news.length,
         spam_news: spamChecked.filter(item => item?.spam?.is_spam).length,
@@ -276,8 +294,19 @@ app.post('/jobs', async (req,res)=>{
         sentiment_score: sentiment.score,
         context_expected: community.counts.expected,
         context_surprise: community.counts.surprise,
-        git_top_score: gitTopScore,
-        git_top: gitTop,
+        git_top_score: gitSummary.lead_score,
+        git_market_signal: gitSummary.market_signal,
+        git_repo: gitSummary.repo,
+        git_difficulties: gitSummary.difficulties,
+        git_successes: gitSummary.successes,
+        git_top: gitSummary.top,
+        market_phase: market?.btc_cycle?.phase || null,
+        altseason_probability: market?.alt_cycle?.probability ?? null,
+        risk_regime: market?.risk_regime?.regime || null,
+        target_health: market?.target_health?.status || null,
+        intelligence_action: intelligence?.actionability || null,
+        intelligence_confidence: intelligence?.confidence ?? null,
+        primary_segment: intelligence?.market_state?.primary_segment || null,
         contract_risk_count: Object.keys(contractRiskResults).length
       },
       result:{
@@ -289,7 +318,9 @@ app.post('/jobs', async (req,res)=>{
         risk,
         sentiment,
         translated,
+        market,
         git,
+        intelligence,
         contractRisk: contractRiskResults
       }
     }
@@ -302,7 +333,8 @@ app.post('/jobs', async (req,res)=>{
       ...jobs[id],
       id,
       status:'error',
-      error: error?.message || 'unknown error'
+      error: error?.message || 'unknown error',
+      updated_at:new Date().toISOString()
     }
 
     await saveJob(jobs[id])
@@ -324,9 +356,26 @@ app.get('/jobs/:id', (req,res)=>{
 
 // Nova rota para scan Git
 app.post('/git/scan', async (req,res)=>{
-  const tracked = req.body.tracked || undefined
   try{
-    const result = await gitAgent.scanRepos(tracked)
+    const repo = normalizeRepoInput(req.body?.repo || req.body?.repository)
+    const payload = {
+      tracked: req.body?.tracked || req.body?.repos,
+      repo: repo || undefined,
+      symbol: normalizeSymbolInput(req.body?.symbol),
+      symbols: req.body?.symbols,
+      commitLimit: req.body?.commitLimit
+    }
+    const result = await gitAgent.scanRepos(payload)
+    res.json(result)
+  }catch(e){
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.get('/backtest/run', async (req,res)=>{
+  try{
+    const tracked = buildTrackedFromSymbols(req.query.symbols || req.query.symbol || 'BTC,ETH')
+    const result = await runAgent('backtest', { tracked, symbols: Object.keys(tracked) }, () => runBacktests(tracked))
     res.json(result)
   }catch(e){
     res.status(500).json({ error: e.message })
@@ -349,7 +398,7 @@ app.get('/etherscan/abi', async (req,res)=>{
 // Nova rota para status dos agentes
 app.get('/agents/status', async (req, res) => {
   try{
-    const agentNames = ['security','collector','spam','filter','risk','sentiment','translator','community','git','etherscan']
+    const agentNames = ['security','collector','spam','filter','risk','sentiment','translator','community','git','intelligence','market','backtest','etherscan']
     const checks = await Promise.all(agentNames.map(name => checkAgent(name, process.env[`${name.toUpperCase()}_AGENT_URL`])))
 
     const errors = checks
@@ -377,8 +426,135 @@ app.listen(port, ()=>{
   console.log('Server online on port', port)
 })
 
-function getAgentMode(envName){
-  return process.env[envName] ? 'container' : 'local'
+
+function normalizeSymbolInput(value){
+  return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9._-]/g, '')
+}
+
+function normalizeRepoInput(value){
+  const raw = String(value || '').trim()
+  if(!raw) return ''
+
+  const match = raw.match(/^(?:https?:\/\/)?(?:www\.)?github\.com\/([^/]+\/[^/.#?]+)(?:\.git)?(?:[/?#].*)?$/i)
+    || raw.match(/^([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)(?:\.git)?$/)
+
+  return match ? match[1].replace(/\.git$/i, '') : ''
+}
+
+function inferSymbolFromRepo(repo){
+  const known = {
+    'bitcoin/bitcoin': 'BTC',
+    'ethereum/go-ethereum': 'ETH',
+    'solana-labs/solana': 'SOL',
+    'smartcontractkit/chainlink': 'LINK',
+    'zcash/zcash': 'ZEC',
+    'ripple/rippled': 'XRP',
+    'bnb-chain/bsc': 'BNB'
+  }
+  const normalized = String(repo || '').toLowerCase()
+  if(known[normalized]) return known[normalized]
+
+  return normalizeSymbolInput(String(repo || '').split('/').pop() || 'REPO').slice(0, 16) || 'REPO'
+}
+
+function buildEmptyCoin(symbol, repo){
+  return {
+    symbol,
+    source: 'repo-only',
+    repo,
+    collected_at:new Date().toISOString(),
+    news: []
+  }
+}
+
+function buildGitPayload(symbol, repo){
+  if(repo){
+    return {
+      symbol,
+      repo,
+      tracked: { [symbol || repo]: repo }
+    }
+  }
+
+  return { symbol }
+}
+
+function buildTrackedFromSymbols(value){
+  const known = {
+    BTC: 'bitcoin/bitcoin',
+    ETH: 'ethereum/go-ethereum',
+    SOL: 'solana-labs/solana',
+    LINK: 'smartcontractkit/chainlink',
+    ZEC: 'zcash/zcash'
+  }
+  const values = Array.isArray(value) ? value : String(value || '').split(',')
+  const symbols = values
+    .flatMap(item => String(item || '').split(','))
+    .map(normalizeSymbolInput)
+    .filter(Boolean)
+
+  return symbols.reduce((acc, symbol) => {
+    acc[symbol] = known[symbol] || 'manual'
+    return acc
+  }, {})
+}
+
+function summarizeGitResult(git){
+  const entries = Object.entries(git || {})
+    .filter(([, value]) => value && typeof value === 'object')
+
+  const best = entries.reduce((selected, [key, item]) => {
+    const score = Number(item.lead_score ?? item.top?.score ?? 0)
+    if(!selected || score > selected.lead_score){
+      return {
+        key,
+        repo: item.repo || null,
+        top: item.top || null,
+        lead_score: score,
+        market_signal: item.market_signal || (item.error ? 'unavailable' : 'quiet'),
+        difficulties: Array.isArray(item.difficulties) ? item.difficulties.length : 0,
+        successes: Array.isArray(item.successes) ? item.successes.length : 0
+      }
+    }
+    return selected
+  }, null)
+
+  return best || {
+    key: null,
+    repo: null,
+    top: null,
+    lead_score: 0,
+    market_signal: 'unavailable',
+    difficulties: 0,
+    successes: 0
+  }
+}
+
+function analyzeContractsFromGit(git){
+  const contractRiskResults = {}
+
+  try{
+    for(const [symbol, data] of Object.entries(git || {})){
+      const recent = data?.recent || []
+      for(const item of recent){
+        for(const abiItem of item.abis || []){
+          const abi = abiItem?.abiResult?.ok ? abiItem.abiResult.abi : null
+          if(!abi) continue
+
+          const key = abiItem.address || abiItem.file || `${symbol}-${item.sha}`
+          try{
+            contractRiskResults[key] = analyzeContract(abi, abiItem.address || null)
+          }catch(error){
+            contractRiskResults[key] = { error: error.message }
+          }
+        }
+      }
+    }
+  }catch(error){
+    console.warn('contract risk extraction failed:', error.message)
+  }
+
+  return contractRiskResults
 }
 
 function getAgentUrl(name){
@@ -414,25 +590,36 @@ async function checkAgent(name, agentUrl){
   if(!agentUrl){
     return {
       name,
-      mode:'local',
-      status:'available'
+      mode: 'local',
+      ok: true,
+      status: 'available'
     }
   }
 
+  const start = Date.now()
   try{
     const response = await axios.get(`${agentUrl}/health`, { timeout: 3000 })
+    const latency_ms = Date.now() - start
+    const data = response.data || {}
 
     return {
       name,
-      mode:'container',
-      status: response.data?.status || 'unknown',
+      mode: 'container',
+      ok: true,
+      status: data.status || 'online',
+      version: data.version || null,
+      uptime: data.uptime || null,
+      memory: data.memory || null,
+      latency_ms,
       url: agentUrl
     }
   }catch(error){
     return {
       name,
-      mode:'container',
-      status:'offline',
+      mode: 'container',
+      ok: false,
+      status: 'offline',
+      latency_ms: Date.now() - start,
       url: agentUrl,
       error: error.message
     }

@@ -3,6 +3,7 @@ import cors from 'cors'
 import helmet from 'helmet'
 import dotenv from 'dotenv'
 import morgan from 'morgan'
+import { buildHealthPayload } from '../utils/health.js'
 
 import { collectCoinData } from './collector/index.js'
 import { filterNews } from './filter/index.js'
@@ -57,12 +58,8 @@ app.use((req, res, next) => {
 })
 
 // Health check endpoint
-app.get('/health', (req,res)=>{
-  res.json({
-    status:'online',
-    agent: agentName,
-    timestamp: new Date().toISOString()
-  })
+app.get('/health', (req, res) => {
+  res.json(buildHealthPayload(agentName))
 })
 
 // Agent execution endpoint
@@ -85,7 +82,7 @@ app.post('/run', async (req,res)=>{
 })
 
 // Error handling middleware
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   console.error('Unhandled error:', err)
   res.status(500).json({
     agent: agentName,

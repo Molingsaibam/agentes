@@ -344,7 +344,7 @@ function buildNewsIntelligence(news, coin){
   }
 }
 
-function buildSegments({ symbol, profile, news, gitIntel, marketIntel, risk, sentiment }){
+function buildSegments({ _symbol, profile, news, gitIntel, marketIntel, risk, sentiment }){
   const scores = new Map()
 
   for(const segmentKey of profile.base_segments){

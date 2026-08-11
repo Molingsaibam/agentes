@@ -6,7 +6,6 @@ import fs from 'fs'
 import path from 'path'
 const serverEnv = path.join(process.cwd(), 'server', '.env')
 if(fs.existsSync(serverEnv)){
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   import('dotenv').then(d => d.config({ path: serverEnv }))
 }
 

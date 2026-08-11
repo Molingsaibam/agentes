@@ -1,15 +1,12 @@
-const fs = require('fs');
-const path = require('path');
-const axios = require('axios');
+import fs from 'fs'
+import path from 'path'
+import axios from 'axios'
+import { fileURLToPath } from 'url'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
-const METRICS_PATH = path.resolve(__dirname, '..', 'logs', 'etherscan_metrics.json');
-// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
-// const DEFAULT_ENDPOINT = 'https://api.etherscan.io/api';
-// Suggested replacement (example):
-// const etherscanClient = require('../server/utils/etherscan_client');
-// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
-// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
-// [ETHERSCAN-AUTOREPLACE-END]
+const METRICS_PATH = path.resolve(__dirname, '..', 'logs', 'etherscan_metrics.json')
+const DEFAULT_ENDPOINT = 'https://api.etherscan.io/api'
 
 function _ensureMetrics() {
   try {
@@ -49,24 +46,11 @@ async function getContractABI(address, apiKey, options = {}) {
 
   const params = {
     module: 'contract',
-// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
-//     action: 'getabi',
-// Suggested replacement (example):
-// const etherscanClient = require('../server/utils/etherscan_client');
-// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
-// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
-// [ETHERSCAN-AUTOREPLACE-END]
+    action: 'getabi',
     address: address,
     apikey: apiKey
   };
 
-// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
-//   console.log('[Etherscan] Request', { address, endpoint, module: 'contract', action: 'getabi' });
-// Suggested replacement (example):
-// const etherscanClient = require('../server/utils/etherscan_client');
-// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
-// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
-// [ETHERSCAN-AUTOREPLACE-END]
   console.log('[Etherscan] Params', params);
 
   try {
@@ -130,13 +114,7 @@ async function getTokenHolders(address, apiKey, options = {}) {
 
   const params = {
     module: 'token',
-// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
-//     action: 'tokenholderlist',
-// Suggested replacement (example):
-// const etherscanClient = require('../server/utils/etherscan_client');
-// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
-// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
-// [ETHERSCAN-AUTOREPLACE-END]
+    action: 'tokenholderlist',
     contractaddress: address,
     apikey: apiKey
   };
@@ -183,9 +161,9 @@ function getMetrics() {
   return metrics.etherscan || { status: 'unknown', requests: 0, cache_hits: 0, cache_misses: 0, errors: 0 };
 }
 
-module.exports = {
+export default {
   getContractABI,
   getTokenHolders,
   getMetrics,
   METRICS_PATH
-};
+}

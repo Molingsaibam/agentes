@@ -1,6 +1,7 @@
-const express = require('express');
-const router = express.Router();
-const etherscan = require('../utils/etherscan_client');
+import express from 'express'
+import etherscan from '../utils/etherscan_client.js'
+
+const router = express.Router()
 
 router.get('/abi', async (req, res) => {
   const address = req.query.address;
@@ -16,4 +17,4 @@ router.get('/abi', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router

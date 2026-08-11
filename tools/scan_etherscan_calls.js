@@ -7,14 +7,30 @@ const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, '..');
 const patterns = [
 // [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
-//   'etherscan.io',
+// [ETHERSCAN-AUTOREPLACE] Original line follows; replace with etherscan_client helper
+// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
+// //   'etherscan.io',
+// Suggested replacement (example):
+// const etherscanClient = require('../server/utils/etherscan_client');
+// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
+// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
+// [ETHERSCAN-AUTOREPLACE-END]
+// [ETHERSCAN-AUTOREPLACE-END]
 // Suggested replacement (example):
 // const etherscanClient = require('../server/utils/etherscan_client');
 // // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
 // // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
 // [ETHERSCAN-AUTOREPLACE-END]
 // [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
-//   'api.etherscan',
+// [ETHERSCAN-AUTOREPLACE] Original line follows; replace with etherscan_client helper
+// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
+// //   'api.etherscan',
+// Suggested replacement (example):
+// const etherscanClient = require('../server/utils/etherscan_client');
+// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
+// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
+// [ETHERSCAN-AUTOREPLACE-END]
+// [ETHERSCAN-AUTOREPLACE-END]
 // Suggested replacement (example):
 // const etherscanClient = require('../server/utils/etherscan_client');
 // // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);

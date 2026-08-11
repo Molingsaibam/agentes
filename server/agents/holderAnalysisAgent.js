@@ -1,6 +1,6 @@
-const etherscanClient = require('../utils/etherscan_client');
+import etherscanClient from '../utils/etherscan_client.js';
 
-async function analyzeHolders(address, apiKey, options = {}) {
+async function analyzeHolders(address, apiKey, _options = {}) {
   const result = {
     address,
     holder_score: null,
@@ -57,6 +57,6 @@ async function analyzeHolders(address, apiKey, options = {}) {
   }
 }
 
-module.exports = {
+export default {
   analyzeHolders
 };

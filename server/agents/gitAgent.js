@@ -1,13 +1,17 @@
 import axios from 'axios'
 import etherscan from './etherscan/index.js'
-const etherscanClient = require('../utils/etherscan_client');
-const contractRiskAgent = require('./contractRiskAgent');
+import contractRiskAgent from './contractRiskAgent.js'
 
 const DEFAULT_TRACKED = {
+  BTC: 'bitcoin/bitcoin',
   ZEC: 'zcash/zcash',
   ETH: 'ethereum/go-ethereum',
+  SOL: 'solana-labs/solana',
   LINK: 'smartcontractkit/chainlink'
 }
+
+const difficultyTerms = ['bug', 'fix', 'security', 'vuln', 'exploit', 'crash', 'fail', 'failure', 'regression', 'attack', 'incident', 'halt', 'emergency']
+const successTerms = ['release', 'upgrade', 'improve', 'optimization', 'performance', 'merge', 'feature', 'support', 'add', 'implement', 'stability']
 
 function makeHeaders(){
   const headers = { 'User-Agent': 'market-agents' }
@@ -64,22 +68,6 @@ function explainCommit(commit, scoring){
   return explanation
 }
 
-// Helper non-invasive: obter ABI via etherscan_client
-// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
-// async function getAbiFromEtherscan(address, apiKey) {
-// Suggested replacement (example):
-// const etherscanClient = require('../server/utils/etherscan_client');
-// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
-// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
-// [ETHERSCAN-AUTOREPLACE-END]
-  try {
-    return await etherscanClient.getContractABI(address, apiKey);
-  } catch (err) {
-    console.error('[gitAgent][Etherscan] getContractABI failed for', address, err.message);
-    throw err;
-  }
-}
-
 // Novo: analisar contratos encontrados usando contractRiskAgent
 async function analyzeContractsInRepo(addresses, apiKey) {
   const results = [];
@@ -87,16 +75,8 @@ async function analyzeContractsInRepo(addresses, apiKey) {
 
   for (const addr of addresses) {
     try {
-      console.log('[gitAgent] obtendo ABI para', addr);
-// [ETHERSCAN-AUTOREPLACE] Original line removed. Use etherscan_client helper below and adapt variable names.
-//       const abi = await getAbiFromEtherscan(addr, apiKey);
-// Suggested replacement (example):
-// const etherscanClient = require('../server/utils/etherscan_client');
-// // for ABI: const abi = await etherscanClient.getContractABI(address, process.env.ETHERSCAN_KEY);
-// // for holders: const holders = await etherscanClient.getTokenHolders(address, process.env.ETHERSCAN_KEY);
-// [ETHERSCAN-AUTOREPLACE-END]
-      console.log('[gitAgent] ABI obtida, executando contractRiskAgent');
-      const analysis = await contractRiskAgent.analyzeContract(addr, apiKey, { abi });
+      console.log('[gitAgent] executando contractRiskAgent para', addr);
+      const analysis = await contractRiskAgent.analyzeContract(addr, apiKey);
       results.push(analysis);
       console.log('[gitAgent] analysis result for', addr, JSON.stringify(analysis));
     } catch (err) {
@@ -109,9 +89,172 @@ async function analyzeContractsInRepo(addresses, apiKey) {
 }
 
 // Export helper to run contract analysis from outside (jobs/test harness)
-module.exports.runContractAnalysisForFoundContracts = async function(addresses, apiKey) {
+export const runContractAnalysisForFoundContracts = async function(addresses, apiKey) {
   return await analyzeContractsInRepo(addresses, apiKey);
 };
+
+function parseTrackedEnv(){
+  const raw = String(process.env.GITHUB_REPOS || '').trim()
+  if(!raw) return null
+
+  const parsed = raw
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean)
+    .reduce((acc, item) => {
+      const [key, value] = item.split('=').map(part => part?.trim())
+      const repo = normalizeRepoPath(value)
+      if(key && repo) acc[key.toUpperCase()] = repo
+      return acc
+    }, {})
+
+  return Object.keys(parsed).length > 0 ? parsed : null
+}
+
+function normalizeRepoPath(value){
+  const raw = String(value || '').trim()
+  if(!raw || raw === 'manual') return ''
+
+  const match = raw.match(/^(?:https?:\/\/)?(?:www\.)?github\.com\/([^/]+\/[^/.#?]+)(?:\.git)?(?:[/?#].*)?$/i)
+    || raw.match(/^([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)(?:\.git)?$/)
+
+  return match ? match[1].replace(/\.git$/i, '') : ''
+}
+
+function normalizeScanInput(input){
+  const envTracked = parseTrackedEnv()
+  const baseTracked = envTracked || DEFAULT_TRACKED
+
+  if(!input){
+    return { tracked: baseTracked, commitLimit: Number(process.env.GITHUB_COMMIT_LIMIT || 5) }
+  }
+
+  if(typeof input === 'string'){
+    const repo = normalizeRepoPath(input)
+    return {
+      tracked: repo ? { [repo]: repo } : baseTracked,
+      commitLimit: Number(process.env.GITHUB_COMMIT_LIMIT || 5)
+    }
+  }
+
+  if(input && typeof input === 'object'){
+    const commitLimit = Number(input.commitLimit || input.limit || process.env.GITHUB_COMMIT_LIMIT || 5)
+    const optionKeys = new Set(['tracked', 'repos', 'repo', 'repository', 'symbol', 'symbols', 'commitLimit', 'limit'])
+    const looksLikeOptions = Object.keys(input).some(key => optionKeys.has(key))
+    const singleRepo = normalizeRepoPath(input.repo || input.repository)
+
+    if(singleRepo){
+      const key = normalizeSymbol(input.symbol) || singleRepo
+      return { tracked: { [key]: singleRepo }, commitLimit }
+    }
+
+    const rawTracked = input.tracked || input.repos || null
+    if(rawTracked && typeof rawTracked === 'object' && !Array.isArray(rawTracked)){
+      return { tracked: normalizeTrackedMap(rawTracked), commitLimit }
+    }
+
+    if(input.symbol){
+      const symbol = normalizeSymbol(input.symbol)
+      const repo = baseTracked[symbol]
+      return {
+        tracked: repo ? { [symbol]: repo } : { [symbol]: '' },
+        commitLimit
+      }
+    }
+
+    if(Array.isArray(input.symbols)){
+      return {
+        tracked: input.symbols.reduce((acc, item) => {
+          const symbol = normalizeSymbol(item)
+          if(symbol) acc[symbol] = baseTracked[symbol] || ''
+          return acc
+        }, {}),
+        commitLimit
+      }
+    }
+
+    if(looksLikeOptions){
+      return { tracked: baseTracked, commitLimit }
+    }
+
+    return { tracked: normalizeTrackedMap(input), commitLimit }
+  }
+
+  return { tracked: baseTracked, commitLimit: Number(process.env.GITHUB_COMMIT_LIMIT || 5) }
+}
+
+function normalizeTrackedMap(value){
+  const out = {}
+  for(const [key, repoValue] of Object.entries(value || {})){
+    const symbol = normalizeSymbol(key) || key
+    const repo = normalizeRepoPath(repoValue)
+    out[symbol] = repo
+  }
+  return out
+}
+
+function normalizeSymbol(value){
+  return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9._-]/g, '')
+}
+
+function buildCommitSignals(item){
+  const text = `${item.message || ''} ${(item.files || []).join(' ')}`.toLowerCase()
+  const difficulties = difficultyTerms.filter(term => text.includes(term))
+  const successes = successTerms.filter(term => text.includes(term))
+  const score = Number(item.score || 0)
+
+  return {
+    difficulties: difficulties.length ? [{
+      title: item.message?.split('\n')[0] || item.sha,
+      url: item.url || '',
+      type: 'commit',
+      impact: score,
+      impact_level: inferImpactLevel(score),
+      terms: difficulties.slice(0, 5),
+      meaning: 'Commit recente toca em termos de risco, correção ou instabilidade.'
+    }] : [],
+    successes: successes.length ? [{
+      title: item.message?.split('\n')[0] || item.sha,
+      url: item.url || '',
+      type: 'commit',
+      impact: score,
+      impact_level: inferImpactLevel(score),
+      terms: successes.slice(0, 5),
+      meaning: 'Commit recente aponta entrega, melhoria ou manutenção positiva.'
+    }] : []
+  }
+}
+
+function inferImpactLevel(score){
+  const value = Number(score || 0)
+  if(value >= 30) return 'critical'
+  if(value >= 20) return 'high'
+  if(value >= 10) return 'medium'
+  return 'low'
+}
+
+function buildRepoSummary(repo, analysed){
+  const successful = analysed.filter(item => !item.error)
+  const leadScore = Math.min(100, successful.reduce((sum, item) => sum + Number(item.score || 0), 0))
+  const signals = successful.map(buildCommitSignals)
+  const difficulties = signals.flatMap(item => item.difficulties).slice(0, 8)
+  const successes = signals.flatMap(item => item.successes).slice(0, 8)
+  const marketSignal = leadScore >= 35 ? 'strong_git_lead'
+    : leadScore >= 12 ? 'watch'
+      : 'quiet'
+
+  return {
+    repository: null,
+    lead_score: leadScore,
+    market_signal: successful.length > 0 ? marketSignal : 'unavailable',
+    signal_summary: successful.length > 0
+      ? `${repo} teve ${successful.length} commit(s) analisado(s), lead ${leadScore} e sinal ${marketSignal}.`
+      : `${repo} não retornou commits analisáveis nesta execução.`,
+    difficulties,
+    successes,
+    errors: analysed.filter(item => item.error).map(item => ({ area: 'commit', error: item.error, sha: item.sha }))
+  }
+}
 
 async function fetchAbisFromCommit(detail){
   const abis = []
@@ -152,14 +295,27 @@ async function fetchAbisFromCommit(detail){
   return abis
 }
 
-export async function scanRepos(tracked = DEFAULT_TRACKED){
+export async function scanRepos(input){
   const out = {}
+  const { tracked, commitLimit } = normalizeScanInput(input)
 
   const entries = Object.entries(tracked)
 
   for(const [symbol, repo] of entries){
+    if(!repo){
+      out[symbol] = {
+        repo: null,
+        error: 'no GitHub repository found for this symbol',
+        lead_score: 0,
+        market_signal: 'unavailable',
+        difficulties: [],
+        successes: []
+      }
+      continue
+    }
+
     try{
-      const commits = await getCommits(repo, 5)
+      const commits = await getCommits(repo, commitLimit)
       const analysed = []
 
       for(const c of commits){
@@ -185,15 +341,24 @@ export async function scanRepos(tracked = DEFAULT_TRACKED){
       out[symbol] = {
         repo,
         top: analysed[0] || null,
-        recent: analysed
+        recent: analysed,
+        ...buildRepoSummary(repo, analysed)
       }
 
     }catch(e){
-      out[symbol] = { repo, error: e.message }
+      out[symbol] = {
+        repo,
+        error: e.message,
+        lead_score: 0,
+        market_signal: 'unavailable',
+        difficulties: [],
+        successes: [],
+        errors: [{ area: 'repository', error: e.message }]
+      }
     }
   }
 
   return out
 }
 
-export default { scanRepos }
+export default { scanRepos, runContractAnalysisForFoundContracts }

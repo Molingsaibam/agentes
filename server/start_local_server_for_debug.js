@@ -1,10 +1,12 @@
-const express = require('express');
+import express from 'express';
+import etherscanRouter from './routes/etherscan.js';
+import etherscanClient from './utils/etherscan_client.js';
+
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Monta rota etherscan existente
 try {
-  const etherscanRouter = require('./routes/etherscan');
   app.use('/etherscan', etherscanRouter);
   console.log('[start_local_server_for_debug] mounted /etherscan routes');
 } catch (err) {
@@ -13,7 +15,6 @@ try {
 
 // Health endpoint com métricas do etherscan
 try {
-  const etherscanClient = require('./utils/etherscan_client');
   app.get('/health', (req, res) => {
     const em = etherscanClient.getMetrics();
     const contractRiskMetrics = {
