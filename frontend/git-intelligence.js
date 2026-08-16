@@ -16,13 +16,14 @@ renderGitHumanDashboard()
 
 function useCurrentGit(){
   try{
-    const job = window.marketAgentsGetSelectedJob?.()
-    const git = job?.result?.git
+    const raw = document.getElementById('result')?.innerText || ''
+    const data = JSON.parse(raw)
+    const git = data?.git || data?.result?.git || data
     gitHumanInput.value = git ? JSON.stringify(git, null, 2) : ''
-    renderGitHumanDashboard()
   }catch{
-    renderGitHumanDashboard()
+    gitHumanInput.value = ''
   }
+  renderGitHumanDashboard()
 }
 
 function renderGitHumanDashboard(){
