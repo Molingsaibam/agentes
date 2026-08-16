@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Market Agents</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="git-intelligence.css">
 </head>
 <body>
   <header class="topbar">
@@ -13,48 +14,38 @@
       <span class="subtitle">Radar multi-agente de mercado cripto</span>
     </div>
     <div class="top-actions">
-      <span class="badge">Fase 3</span>
+      <span class="badge">Fase 4</span>
       <button id="themeToggle" class="secondary-button" type="button">Tema</button>
     </div>
   </header>
-
   <main class="shell">
     <section class="panel" aria-labelledby="analyze-title">
-      <div>
-        <h2 id="analyze-title">Dashboard Multi-Agente</h2>
-        <p>Informe símbolos (<strong>BTC, ETH</strong>) ou cole URLs do GitHub (<strong>https://github.com/bitcoin/bitcoin</strong>). Você pode misturar os dois, separando por vírgula ou espaço.</p>
-      </div>
-
-      <div class="form-row">
-        <input id="symbol" placeholder="BTC, ETH ou https://github.com/bitcoin/bitcoin" autocomplete="off">
-        <button id="analyzeBtn" type="button">Analisar</button>
-        <button id="exportJsonBtn" class="secondary-button" type="button" disabled>Exportar JSON</button>
-        <button id="printBtn" class="secondary-button" type="button" disabled>PDF</button>
-      </div>
+      <div><h2 id="analyze-title">Dashboard Multi-Agente</h2><p>Informe símbolos (<strong>BTC, ETH</strong>) ou cole URLs do GitHub (<strong>https://github.com/bitcoin/bitcoin</strong>). Você pode misturar os dois, separando por vírgula ou espaço.</p></div>
+      <div class="form-row"><input id="symbol" placeholder="BTC, ETH ou https://github.com/bitcoin/bitcoin" autocomplete="off"><button id="analyzeBtn" type="button">Analisar</button><button id="exportJsonBtn" class="secondary-button" type="button" disabled>Exportar JSON</button><button id="printBtn" class="secondary-button" type="button" disabled>PDF</button></div>
     </section>
-
     <div id="status" role="status"></div>
     <section id="assetTabs" class="asset-tabs" aria-label="Ativos analisados"></section>
-
     <nav class="tabs" role="tablist" aria-label="Fases da análise">
       <button class="tab is-active" type="button" data-tab="summary" role="tab" aria-selected="true">Resumo</button>
       <button class="tab" type="button" data-tab="intelligence" role="tab" aria-selected="false">Inteligência</button>
       <button class="tab" type="button" data-tab="git" role="tab" aria-selected="false">GitHub</button>
+      <button class="tab" type="button" data-tab="git-human" role="tab" aria-selected="false">Git traduzido</button>
       <button class="tab" type="button" data-tab="news" role="tab" aria-selected="false">Notícias</button>
       <button class="tab" type="button" data-tab="comparison" role="tab" aria-selected="false">Comparação</button>
       <button class="tab" type="button" data-tab="json" role="tab" aria-selected="false">JSON</button>
     </nav>
-
     <section id="summary" class="summary-grid tab-panel is-active" data-panel="summary" aria-label="Resumo da análise"></section>
     <section id="intelligence" class="intelligence-panel tab-panel" data-panel="intelligence" aria-label="Leitura inteligente"></section>
     <section id="git" class="git-list tab-panel" data-panel="git" aria-label="Sinais do GitHub"></section>
+    <section id="git-human" class="git-human-panel tab-panel" data-panel="git-human" aria-label="GitHub traduzido em linguagem humana">
+      <div class="git-human-head"><div><span class="section-kicker">Atualização do Codex</span><h2>Commits traduzidos em linguagem humana</h2><p>Use o retorno do Git Agent ou cole commits brutos para transformar atividade técnica em sinais de mercado.</p></div><button id="gitHumanUseCurrent" class="secondary-button" type="button">Usar Git atual</button></div>
+      <div class="git-human-input"><textarea id="gitHumanInput" rows="7" placeholder="Cole aqui o JSON do Git Agent, commits ou PRs..."></textarea><button id="gitHumanTranslate" type="button">Traduzir sinais</button></div>
+      <div id="gitHumanSummary" class="git-human-summary"></div><div id="gitHumanWall" class="git-human-wall"></div>
+    </section>
     <section id="news" class="news-list tab-panel" data-panel="news" aria-label="Notícias filtradas"></section>
     <section id="comparison" class="comparison-panel tab-panel" data-panel="comparison" aria-label="Comparação entre ativos"></section>
-    <section class="raw-block tab-panel" data-panel="json" aria-label="JSON completo">
-      <pre id="result"></pre>
-    </section>
+    <section class="raw-block tab-panel" data-panel="json" aria-label="JSON completo"><pre id="result"></pre></section>
   </main>
-
-  <script src="app.js"></script>
+  <script src="app.js"></script><script src="git-intelligence.js"></script>
 </body>
 </html>
